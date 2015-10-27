@@ -76,12 +76,19 @@ nrow(rocks)
 
 ###########MAPS THE BAES###############
 abun <- read.csv("F:/DATA/SLBE/Manuscripts/Bae/Doc/Abundances GL.csv")
+#remove the ones we don't want to map
+
+abun <- abun[abun$Include.on.map. == "Y", ]
+abun$sqm.adj <- log10(abun$sqm.adj)
+abun$sqm.adj[is.na(abun$sqm.adj)] <- 0
+
+levels(abun$Present.on.map)[levels(abun$Present.on.map)=="N"] <- "Count"
+levels(abun$Present.on.map)[levels(abun$Present.on.map)=="P"] <- "Present"
 
 library(maps)
 library(mapdata)
 
 library(ggplot2)
-
 
 # get the names
 MRmap <- fortify(map('worldHires', c('Canada'), fill=TRUE, plot=FALSE))
@@ -91,11 +98,19 @@ us = map_data("state")
 
 setwd("F:/DATA/SLBE/Manuscripts/Bae/Figs/")
 
+MYcolors <-c("#999999", "#000000")
+
 gg <- ggplot()
 gg <- gg + geom_map(data=MRmap , map=MRmap, aes(x=long, y=lat, map_id=region), fill="white", color="black") + 
-            geom_polygon(data=us,aes(x=long, y=lat, group=group), colour="black", fill="white", alpha=0)  +        
-            coord_map(xlim = c(-90,-76),ylim = c(41, 49)) + Goby_theme
-gg <- gg + geom_point(data=abun, aes(x=Long, y=Lat, color = Numbers))  + xlab("Longitude") +  ylab("Latitude") + Goby_theme
+  geom_polygon(data=us,aes(x=long, y=lat, group=group), colour="black", fill="white", alpha=0)  +        
+  coord_map(xlim = c(-90,-76),ylim = c(41, 49)) + Goby_theme
+gg <- gg + geom_point(data=abun, aes(x=Long, y=Lat, shape = Present.on.map, size = sqm.adj, color=Age))  + 
+  scale_colour_manual(values=MYcolors) +
+  scale_size_continuous(range = c(2, 7)) + 
+  xlab("Longitude") +  ylab("Latitude") + Goby_theme +
+  labs(size = "log(Count)", shape = "Shape Key", color="Life stage") +
+  theme(legend.position = c(.9, .6), legend.background = element_rect(fill="white", size=0.5, linetype="solid", colour ="black"))+
+  guides(color=guide_legend(), size = guide_legend())
 
 
 png("BaeLocs.png", width = 6, height = 7, units = 'in', pointsize = 12, res = 400)
