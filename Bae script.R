@@ -75,8 +75,29 @@ nrow(rocks)
 
 
 ###########MAPS THE BAES###############
+library(maps)
+library(mapdata)
+library(ggplot2)
+library(rgdal) 
+library(maptools)
+
 abun <- read.csv("F:/DATA/SLBE/Manuscripts/Bae/Doc/Abundances GL.csv")
 #remove the ones we don't want to map
+
+setwd("F:/DATA/SLBE/Manuscripts/Bae/Maps/") 
+
+locs1 = readOGR(dsn=".", layer="BaeLocs")
+locs1  <- spTransform(locs1 , CRS("+proj=longlat"))
+locs1@data$Id = rownames(locs1@data)
+DB <- data.frame(FID=locs1$Id)
+DB <- cbind(DB, locs1@coords)
+DB$NP <- rep("NP",nrow(DB))
+
+
+
+#locs1 <- fortify(locs1)
+ggplot(DB) + aes(coords.x1,coords.x2) + geom_point()
+
 
 abun <- abun[abun$Include.on.map. == "Y", ]
 abun$sqm.adj <- log10(abun$sqm.adj)
@@ -85,10 +106,6 @@ abun$sqm.adj[is.na(abun$sqm.adj)] <- 0
 levels(abun$Present.on.map)[levels(abun$Present.on.map)=="N"] <- "Count"
 levels(abun$Present.on.map)[levels(abun$Present.on.map)=="P"] <- "Present"
 
-library(maps)
-library(mapdata)
-
-library(ggplot2)
 
 # get the names
 MRmap <- fortify(map('worldHires', c('Canada'), fill=TRUE, plot=FALSE))
@@ -101,9 +118,10 @@ setwd("F:/DATA/SLBE/Manuscripts/Bae/Figs/")
 MYcolors <-c("#999999", "#000000")
 
 gg <- ggplot()
+gg <- gg + geom_point(data=DB, aes(x=coords.x1, y=coords.x2, color=NP), color="light grey", shape=1) 
 gg <- gg + geom_map(data=MRmap , map=MRmap, aes(x=long, y=lat, map_id=region), fill="white", color="black") + 
   geom_polygon(data=us,aes(x=long, y=lat, group=group), colour="black", fill="white", alpha=0)  +        
-  coord_map(xlim = c(-90,-76),ylim = c(41, 49)) + Goby_theme
+  coord_map(xlim = c(-93,-76),ylim = c(41, 49)) + Goby_theme
 gg <- gg + geom_point(data=abun, aes(x=Long, y=Lat, shape = Present.on.map, size = sqm.adj, color=Age))  + 
   scale_colour_manual(values=MYcolors) +
   scale_size_continuous(range = c(2, 7)) + 
@@ -111,7 +129,7 @@ gg <- gg + geom_point(data=abun, aes(x=Long, y=Lat, shape = Present.on.map, size
   labs(size = "log(Count)", shape = "Shape Key", color="Life stage") +
   theme(legend.position = c(.9, .6), legend.background = element_rect(fill="white", size=0.5, linetype="solid", colour ="black"))+
   guides(color=guide_legend(), size = guide_legend())
-
+gg
 
 png("BaeLocs.png", width = 6, height = 7, units = 'in', pointsize = 12, res = 400)
 gg
